@@ -40,7 +40,7 @@ def test_kalman_transition():
         ])
     )
 
-    new_states = kf.kalman_transition(states, 1., hp)
+    new_states = states.transitioned(1., hp)
 
     expected_means = np.array([
         [10., 10., 0., 25., 30., 10.],
@@ -75,8 +75,8 @@ def test_kalman_posterior_at_mean():
         ])
     )
 
-    new_states, observation_logp = kf.kalman_posterior(
-        states, np.array([True]), np.array([0., 0.]), hp)
+    new_states, observation_logp = states.posterior(
+        np.array([True]), np.array([0., 0.]), hp)
 
     expected_means = states.means
     np.testing.assert_allclose(new_states.means, expected_means)
@@ -114,8 +114,8 @@ def test_kalman_posterior_away_mean():
         ])
     )
 
-    new_states, observation_logp = kf.kalman_posterior(
-        states, np.array([True]), np.array([10., 20.]), hp)
+    new_states, observation_logp = states.posterior(
+        np.array([True]), np.array([10., 20.]), hp)
 
     expected_means = np.array([[2., 10., 0., 4., 20., 10.]])
     np.testing.assert_allclose(new_states.means, expected_means)
@@ -157,8 +157,8 @@ def test_kalman_posterior_mask():
         ])
     )
 
-    new_states, observation_logp = kf.kalman_posterior(
-        states, np.array([False, True]), np.array([0., 0.]), hp)
+    new_states, observation_logp = states.posterior(
+        np.array([False, True]), np.array([0., 0.]), hp)
 
     expected_means = states.means
     np.testing.assert_allclose(new_states.means, expected_means)
