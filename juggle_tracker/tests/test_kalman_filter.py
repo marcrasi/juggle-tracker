@@ -23,13 +23,12 @@ def normal_log_pdf(x, mean, variance):
             -0.5 * ((x - mean) ** 2) / variance 
 
 def test_kalman_transition():
-    hp = kf.KalmanHyperparameters(
+    hp = kf.Hyperparameters(
         transition_pos_sd = 1.,
         transition_v_sd = 2.,
         transition_a_sd = 3.,
-        observation_sd = 20.,
     )
-    states = kf.KalmanStates(
+    states = kf.States(
         means = np.array([
             [0., 10., 0., 0., 20., 10.],
             [0., -5., 0., 0., -10., 0.],
@@ -60,13 +59,10 @@ def test_kalman_transition():
 
 def test_kalman_posterior_at_mean():
     """One ball, one observation exactly at the mean of the state."""
-    hp = kf.KalmanHyperparameters(
-        transition_pos_sd = 1.,
-        transition_v_sd = 2.,
-        transition_a_sd = 3.,
+    hp = kf.Hyperparameters(
         observation_sd = 2.,
     )
-    states = kf.KalmanStates(
+    states = kf.States(
         means = np.array([
             [0., 10., 0., 0., 20., 10.],
         ]),
@@ -99,13 +95,10 @@ def test_kalman_posterior_at_mean():
 
 def test_kalman_posterior_away_mean():
     """One ball, one observation away from the mean of the state."""
-    hp = kf.KalmanHyperparameters(
-        transition_pos_sd = 1.,
-        transition_v_sd = 2.,
-        transition_a_sd = 3.,
+    hp = kf.Hyperparameters(
         observation_sd = 2.,
     )
-    states = kf.KalmanStates(
+    states = kf.States(
         means = np.array([
             [0., 10., 0., 0., 20., 10.],
         ]),
@@ -140,13 +133,10 @@ def test_kalman_posterior_away_mean():
 
 def test_kalman_posterior_mask():
     """Two balls, but one of them is not observed."""
-    hp = kf.KalmanHyperparameters(
-        transition_pos_sd = 1.,
-        transition_v_sd = 2.,
-        transition_a_sd = 3.,
+    hp = kf.Hyperparameters(
         observation_sd = 2.,
     )
-    states = kf.KalmanStates(
+    states = kf.States(
         means = np.array([
             [15., 10., 0., 30., 20., 10.],
             [0., 10., 0., 0., 20., 10.],

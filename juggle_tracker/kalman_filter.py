@@ -21,7 +21,7 @@ from scipy.special import logsumexp
 import scipy.stats
 
 @dataclass
-class KalmanHyperparameters:
+class Hyperparameters:
     transition_pos_sd: float = 10.
     transition_v_sd: float = 10.
     transition_a_sd: float = 10_000.
@@ -36,16 +36,16 @@ def transition_matrix(dt: float):
 
 
 @dataclass
-class KalmanStates:
+class States:
     # The ball state vector is [x, vx, ax, y, vy, ay].
 
     # [ball_count, 6] array of KF means for ball states.
-    means: np.ndarray
+    means: np.ndarray = np.zeros([0, 6])
 
     # [ball_count, 6, 6] array of KF covariances for ball states.
-    covariances: np.ndarray
+    covariances: np.ndarray = np.zeros([0, 6, 6])
 
-    def transitioned(self, dt: float, hp: KalmanHyperparameters):
+    def transitioned(self, dt: float, hp: Hyperparameters):
         """Returns `self, stepped forward `dt` in time."""
         t = transition_matrix(dt)[np.newaxis, ...]
         tt = np.transpose(t, axes=(0, 2, 1))
@@ -64,13 +64,13 @@ class KalmanStates:
             transition_pos_sd**2, transition_v_sd**2, transition_a_sd**2,
             transition_pos_sd**2, transition_v_sd**2, transition_a_sd**2,
         ])[np.newaxis, ...]
-        return KalmanStates(
+        return States(
             means = (t @ self.means[..., np.newaxis]).squeeze(-1),
             covariances = t @ self.covariances @ tt + process_noise_cov)
 
     def posterior(
             self, have_observation: np.ndarray,
-            observations: np.ndarray, hp: KalmanHyperparameters):
+            observations: np.ndarray, hp: Hyperparameters):
         """Returns the updated state distribution given the `observations`,
         and returns the log liklihood of `observations` under the distribution
         given by `self` and by the observation noise model.
@@ -115,4 +115,4 @@ class KalmanStates:
         new_covs[have_observation, ...] = \
             (np.eye(6) - K @ observation_matrix) @ masked_covs
 
-        return KalmanStates(means=new_means, covariances=new_covs), obs_logp
+        return States(means=new_means, covariances=new_covs), obs_logp
