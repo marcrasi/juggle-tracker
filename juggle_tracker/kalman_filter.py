@@ -22,9 +22,9 @@ import scipy.stats
 
 @dataclass
 class Hyperparameters:
-    transition_pos_sd: float = 10.
-    transition_v_sd: float = 10.
-    transition_a_sd: float = 10_000.
+    transition_pos_sd: float = 1.
+    transition_v_sd: float = 1.
+    transition_a_sd: float = 1_000.
     observation_sd: float = 20.
 
 
