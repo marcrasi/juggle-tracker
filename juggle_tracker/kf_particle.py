@@ -1,4 +1,3 @@
-
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,21 +25,40 @@ from . import kalman_filter as kf
 
 @dataclass
 class Hyperparameters:
+    # The filter state mean of a ball when it is first added.
     initial_state_mean: np.ndarray = np.array([240., 0., 0., 320., 0., 0.])
-    initial_state_pos_sd: float = 10.
+
+    # The filter state stdev of ball position when it is first added.
+    initial_state_pos_sd: float = 1000.
+
+    # The filter state stdev of ball velocity when it is first addd.
     initial_state_v_sd: float = 1000.
+
+    # The filter state stdev of ball acceleration when it is first addd.
     initial_state_a_sd: float = 1000.
 
+    # The per-second rate at which balls are dropped.
     lambda_drop: float = 1.
+
+    # The per-second rate at which new balls are added.
     lambda_new: float = 1.
+
+    # The probability that a ball is observed in a frame where the ball
+    # is present.
     p_obs: float = 0.9
+
+    # The per-frame rate at which spurious observations are made.
     lambda_spur: float = 0.1
 
+    # The parameters for the ball state kalman filter.
     kalman: kf.Hyperparameters = kf.Hyperparameters()
 
+    # A random number generator used for drawing from random
+    # distributions.
     rng: np.random.Generator = np.random.default_rng()
 
     def initial_state_covariance(self):
+        """The filter covariance for a ball when it is first added."""
         return np.diag([
             self.initial_state_pos_sd,
             self.initial_state_v_sd,
@@ -49,6 +67,40 @@ class Hyperparameters:
             self.initial_state_v_sd,
             self.initial_state_a_sd,
         ])
+
+    # A cache for `p_counts`.
+    p_counts_cache: dict = dataclasses.field(default_factory=dict)
+
+    def p_counts(self, ball_count, measurement_count):
+        """Returns:
+        - the probability of seeing `measurement_count` given that
+          there are `ball_count` balls; and
+        - the discrete probability distribution over the number of
+          true measurements (measurements actually coming from a ball)
+          given that there are `ball_count` balls and
+          `measurement_count` measurements.
+        """
+
+        cached_result = self.p_counts_cache.get(
+            (ball_count, measurement_count))
+        if cached_result is not None:
+            return cached_result
+
+        true_observation_count_max = min(ball_count, measurement_count)
+        result = np.zeros(true_observation_count_max + 1)
+        total = 0.0
+        for t in range(true_observation_count_max + 1):
+            s = measurement_count - t
+            p_spur = (self.lambda_spur ** s) * np.exp(-self.lambda_spur) / math.factorial(s)
+            p_true = math.comb(ball_count, t) * \
+                (self.p_obs ** t) * ((1 - self.p_obs) ** (ball_count - t))
+            p = p_spur * p_true
+            result[t] = p
+            total += p
+        result = result / total
+
+        self.p_counts_cache[(ball_count, measurement_count)] = (total, result)
+        return (total, result)
 
 
 @dataclass
@@ -65,7 +117,8 @@ class Particle:
     filter: kf.States = kf.States()
 
     def transitioned(self, dt: float, hp: Hyperparameters):
-        """Returns `self`, transitioned forwards in time by `dt`.
+        """Returns a draw from the distribution of `self` transitioned
+        forwards by `dt`.
 
         1. Transitions the current balls using kalman.
         2. Drops balls according to the ball drop distribution.
@@ -95,7 +148,40 @@ class Particle:
         return result
 
     def posterior(self, measurements: np.ndarray, hp: Hyperparameters):
-        pass
+        """Returns:
+        - a draw from the posterior distribution given `self` and
+          `measurements`; and
+        - the log liklihood of `measurements` under the observation model
+          given `self`.
+        """
+
+        ball_count = self.filter.means.shape[0]
+        measurement_count = measurements.shape[0]
+        p_measurement_count, p_true_observation_count = \
+            hp.p_counts(ball_count, measurement_count)
+        true_observation_count = hp.rng.choice(
+            p_true_observation_count.shape[0], p=p_true_observation_count)
+
+        observed_ball_indices = hp.rng.choice(
+            ball_count, size=true_observation_count, replace=False)
+        true_observation_indices = hp.rng.choice(
+            measurement_count, size=true_observation_count, replace=False)
+
+        ball_mask = np.full(ball_count, False)
+        ball_mask[observed_ball_indices] = True
+        obs = measurements[true_observation_indices, :]
+
+        updated_filter, kalman_logp = self.filter.posterior(
+            ball_mask, obs, hp.kalman)
+
+        # Liklihood of seeing the spurious observations where they are.
+        spurious_logp = (measurement_count - true_observation_count) * -np.log(640 * 480)
+
+        return (
+            Particle(filter=updated_filter),
+            kalman_logp + spurious_logp + np.log(p_measurement_count)
+        )
+
 
 @dataclass
 class State:

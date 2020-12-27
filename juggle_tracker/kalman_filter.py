@@ -71,9 +71,10 @@ class States:
     def posterior(
             self, have_observation: np.ndarray,
             observations: np.ndarray, hp: Hyperparameters):
-        """Returns the updated state distribution given the `observations`,
-        and returns the log liklihood of `observations` under the distribution
-        given by `self` and by the observation noise model.
+        """Returns:
+        - the updated state distribution given the `observations`, and
+        - the log liklihood of `observations` under the distribution
+          given by `self` and by the observation noise model.
 
         Arguments:
         have_observation - [ball_count] boolean array saying whether we

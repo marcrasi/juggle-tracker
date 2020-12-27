@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import math
 import numpy as np
 import scipy.linalg
@@ -46,6 +47,7 @@ def test_add_ball():
 
     assert(n_added == 9)
 
+
 def test_remove_ball():
     """Test that we remove balls with the correct probability from a
     particle with 3 balls."""
@@ -70,3 +72,115 @@ def test_remove_ball():
         n_removed += 3 - new_particle.filter.means.shape[0]
 
     assert(n_removed == 25)
+
+
+def check_p_counts(
+        hp,
+        ball_count,
+        measurement_count,
+        expected_p_measurement_count,
+        expected_p_true_observation_count):
+    p_measurement_count, p_true_observation_count = hp.p_counts(
+        ball_count, measurement_count)
+    assert(p_measurement_count == pytest.approx(expected_p_measurement_count))
+    np.testing.assert_allclose(
+        p_true_observation_count, expected_p_true_observation_count)
+
+
+def test_p_counts():
+    no_spurious = kp.Hyperparameters(p_obs=0.9, lambda_spur=0.)
+    check_p_counts(
+        no_spurious, 0, 0,
+        expected_p_measurement_count=1.,
+        expected_p_true_observation_count=[1.])
+    check_p_counts(
+        no_spurious, 5, 0,
+        expected_p_measurement_count=0.1 ** 5,
+        expected_p_true_observation_count=[1.])
+    check_p_counts(
+        no_spurious, 5, 3,
+        expected_p_measurement_count = 10 * (0.9 ** 3) * (0.1 ** 2),
+        expected_p_true_observation_count = [0., 0., 0., 1.])
+    check_p_counts(
+        no_spurious, 5, 5,
+        expected_p_measurement_count = 0.9 ** 5,
+        expected_p_true_observation_count = [0., 0., 0., 0., 0., 1.])
+
+    all_spurious = kp.Hyperparameters(p_obs=0., lambda_spur=0.1)
+    check_p_counts(
+        all_spurious, 0, 0,
+        expected_p_measurement_count = np.exp(-0.1),
+        expected_p_true_observation_count = [1.])
+    check_p_counts(
+        all_spurious, 0, 2,
+        expected_p_measurement_count = (0.1 ** 2) * np.exp(-0.1) / 2,
+        expected_p_true_observation_count = [1.])
+    check_p_counts(
+        all_spurious, 5, 0,
+        expected_p_measurement_count = np.exp(-0.1),
+        expected_p_true_observation_count = [1.])
+    check_p_counts(
+        all_spurious, 5, 3,
+        expected_p_measurement_count = (0.1 ** 3) * np.exp(-0.1) / 6,
+        expected_p_true_observation_count = [1., 0., 0., 0.])
+    check_p_counts(
+        all_spurious, 5, 5,
+        expected_p_measurement_count = (0.1 ** 5) * np.exp(-0.1) / math.factorial(5),
+        expected_p_true_observation_count = [1., 0., 0., 0., 0., 0.])
+    check_p_counts(
+        all_spurious, 5, 7,
+        expected_p_measurement_count = (0.1 ** 7) * np.exp(-0.1) / math.factorial(7),
+        expected_p_true_observation_count = [1., 0., 0., 0., 0., 0.])
+
+    some_spurious = kp.Hyperparameters(p_obs=0.9, lambda_spur=0.1)
+    check_p_counts(
+        some_spurious, 0, 0,
+        expected_p_measurement_count = np.exp(-0.1),
+        expected_p_true_observation_count = [1.])
+    check_p_counts(
+        some_spurious, 0, 2,
+        expected_p_measurement_count = (0.1 ** 2) * np.exp(-0.1) / 2,
+        expected_p_true_observation_count = [1.])
+    check_p_counts(
+        some_spurious, 1, 0,
+        expected_p_measurement_count = np.exp(-0.1) * 0.1,
+        expected_p_true_observation_count = [1.])
+    check_p_counts(
+        some_spurious, 1, 1,
+        expected_p_measurement_count = np.exp(-0.1) * 0.9 + 0.1 * np.exp(-0.1) * 0.1,
+        expected_p_true_observation_count = [0.01 / 0.91, 0.9 / 0.91])
+
+
+def test_posterior_no_balls_no_measurements():
+    hp = kp.Hyperparameters(
+        p_obs=0.9,
+        lambda_spur=0.1,
+        rng=np.random.default_rng(5))
+    particle = kp.Particle()
+    updated_particle, logp = particle.posterior(np.array(np.zeros((0, 2))), hp)
+    np.testing.assert_allclose(updated_particle.filter.means, np.zeros((0, 6)))
+    np.testing.assert_allclose(updated_particle.filter.covariances, np.zeros((0, 6, 6)))
+
+
+def test_posterior_no_balls():
+    pass
+
+
+def test_posterior_one_ball_measured():
+    pass
+
+
+def test_posterior_one_ball_no_measurement():
+    pass
+
+
+def test_posterior_one_ball_spurious_measurement():
+    pass
+
+
+def test_posterior_one_ball_measured_and_spurious_measurement():
+    pass
+
+
+def test_posterior_many_balls_many_measurements():
+    pass
