@@ -39,7 +39,7 @@ def test_add_ball():
         if new_particle.filter.means.shape[0] == 1:
             np.testing.assert_allclose(
                 new_particle.filter.means[0],
-                hp.initial_state_mean)
+                hp.initial_state_mean())
             np.testing.assert_allclose(
                 new_particle.filter.covariances[0],
                 hp.initial_state_covariance())
@@ -58,7 +58,7 @@ def test_remove_ball():
         rng = np.random.default_rng(42))
     particle = kp.Particle(
         filter=kf.States(
-            means=np.tile(hp.initial_state_mean[np.newaxis, :], (3, 1)),
+            means=np.tile(hp.initial_state_mean()[np.newaxis, :], (3, 1)),
             covariances=np.tile(
                 hp.initial_state_covariance()[np.newaxis, :], (3, 1, 1))))
 
@@ -160,10 +160,29 @@ def test_posterior_no_balls_no_measurements():
     updated_particle, logp = particle.posterior(np.array(np.zeros((0, 2))), hp)
     np.testing.assert_allclose(updated_particle.filter.means, np.zeros((0, 6)))
     np.testing.assert_allclose(updated_particle.filter.covariances, np.zeros((0, 6, 6)))
+    assert(logp == pytest.approx(-0.1))
 
 
 def test_posterior_no_balls():
-    pass
+    hp = kp.Hyperparameters(
+        frame_width=640., frame_height=480.,
+        p_obs=0.9,
+        lambda_spur=0.1,
+        rng=np.random.default_rng(5))
+    particle = kp.Particle()
+    updated_particle, logp = particle.posterior(np.array([[320., 240.]]), hp)
+    np.testing.assert_allclose(updated_particle.filter.means, np.zeros((0, 6)))
+    np.testing.assert_allclose(updated_particle.filter.covariances, np.zeros((0, 6, 6)))
+
+    # Likelihood of one spurious measurement.
+    expected_logp_poisson = np.log(0.1) - 0.1
+
+    # Liklihood of the spurious measurement being where it is.
+    expected_logp_uniform = -np.log(640. * 480.)
+
+    expected_logp = expected_logp_poisson + expected_logp_uniform
+
+    assert(logp == pytest.approx(expected_logp))
 
 
 def test_posterior_one_ball_measured():

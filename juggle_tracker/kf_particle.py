@@ -25,8 +25,15 @@ from . import kalman_filter as kf
 
 @dataclass
 class Hyperparameters:
+    # The width of the frame in pixels.
+    frame_width: float = 640.
+
+    # The height of the frame in pixels.
+    frame_height: float = 480.
+
     # The filter state mean of a ball when it is first added.
-    initial_state_mean: np.ndarray = np.array([240., 0., 0., 320., 0., 0.])
+    def initial_state_mean(self):
+        return np.array([self.frame_width / 2., 0., 0., self.frame_height / 2., 0., 0.])
 
     # The filter state stdev of ball position when it is first added.
     initial_state_pos_sd: float = 1000.
@@ -138,7 +145,7 @@ class Particle:
         if add_ball:
             result.filter.means = np.concatenate([
                 result.filter.means,
-                hp.initial_state_mean[np.newaxis, ...]
+                hp.initial_state_mean()[np.newaxis, ...]
             ])
             result.filter.covariances = np.concatenate([
                 result.filter.covariances,
@@ -175,7 +182,8 @@ class Particle:
             ball_mask, obs, hp.kalman)
 
         # Liklihood of seeing the spurious observations where they are.
-        spurious_logp = (measurement_count - true_observation_count) * -np.log(640 * 480)
+        spurious_logp = (measurement_count - true_observation_count) * \
+            -np.log(hp.frame_width * hp.frame_height)
 
         return (
             Particle(filter=updated_filter),
