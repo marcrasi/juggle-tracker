@@ -18,10 +18,7 @@ import scipy.linalg
 
 import juggle_tracker.kalman_filter as kf
 
-
-def normal_log_pdf(x, mean, variance):
-    return -0.5 * np.log(2 * math.pi * variance) + \
-            -0.5 * ((x - mean) ** 2) / variance
+from . import util
 
 
 def test_kalman_transition():
@@ -92,8 +89,8 @@ def test_kalman_posterior_at_mean():
     # The x-coordinate observation has mean 0 and variance
     #   state_variance + observation_variance = 1 + 4 = 5.
     # The y-coordinate observation has the same mean and variance.
-    expected_observation_logp = normal_log_pdf(0., mean=0., variance=5.) + \
-        normal_log_pdf(0., mean=0., variance=5.)
+    expected_observation_logp = util.normal_log_pdf(0., mean=0., variance=5.) + \
+        util.normal_log_pdf(0., mean=0., variance=5.)
     np.testing.assert_allclose(observation_logp, expected_observation_logp)
 
 
@@ -131,8 +128,8 @@ def test_kalman_posterior_away_mean():
     # The y-coordinate observation has the same mean and variance.
     expected_observation_x_logp = -0.5 * np.log(2 * math.pi * 5) - 0.5 * (10. / math.sqrt(5.)) ** 2
     expected_observation_y_logp = -0.5 * np.log(2 * math.pi * 5) - 0.5 * (20. / math.sqrt(5.)) ** 2
-    expected_observation_logp = normal_log_pdf(10., mean=0., variance=5.) + \
-        normal_log_pdf(20., mean=0., variance=5.)
+    expected_observation_logp = util.normal_log_pdf(10., mean=0., variance=5.) + \
+        util.normal_log_pdf(20., mean=0., variance=5.)
     np.testing.assert_allclose(observation_logp, expected_observation_logp)
 
 
@@ -171,6 +168,6 @@ def test_kalman_posterior_mask():
     # The x-coordinate observation has mean 0 and variance
     #   state_variance + observation_variance = 1 + 4 = 5.
     # The y-coordinate observation has the same mean and variance.
-    expected_observation_logp = normal_log_pdf(0., mean=0., variance=5.) + \
-        normal_log_pdf(0., mean=0., variance=5.)
+    expected_observation_logp = util.normal_log_pdf(0., mean=0., variance=5.) + \
+        util.normal_log_pdf(0., mean=0., variance=5.)
     np.testing.assert_allclose(observation_logp, expected_observation_logp)
