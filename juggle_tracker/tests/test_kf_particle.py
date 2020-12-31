@@ -20,6 +20,9 @@ import scipy.linalg
 import juggle_tracker.kalman_filter as kf
 import juggle_tracker.kf_particle as kp
 
+from . import assertions
+from . import util
+
 
 def test_add_ball():
     """Test that we add a ball to an empty particle with the correct
@@ -187,6 +190,20 @@ def test_posterior_no_balls():
 
 
 def test_posterior_one_ball_measured():
+    hp = kp.Hyperparameters(
+        frame_width=640., frame_height=480.,
+        p_obs=0.8,
+        lambda_spur=1.,
+        rng=np.random.default_rng(5))
+    particle = kp.Particle(
+        filter=kf.States(
+            means=np.array([[320., 0., 0., 240., 0., 0.]]),
+            covariances=hp.initial_state_covariance()[np.newaxis, ...]))
+
+    # We expect one of two things to happen:
+    # The measurement is for the ball, with probability 0.8
+    # The measurement is spurious, with probability 0.2
+
     pass
 
 

@@ -155,6 +155,8 @@ class Particle:
         return result
 
     def posterior(self, measurements: np.ndarray, hp: Hyperparameters):
+        # TODO: For better testability, refactor this into separate sampling and deterministic
+        # steps.
         """Returns:
         - a draw from the posterior distribution given `self` and
           `measurements`; and
