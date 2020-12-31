@@ -20,6 +20,7 @@ import scipy.linalg
 import juggle_tracker.kalman_filter as kf
 import juggle_tracker.kf_particle as kp
 
+
 def test_add_ball():
     """Test that we add a ball to an empty particle with the correct
     probability."""

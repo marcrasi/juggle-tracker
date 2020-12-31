@@ -18,9 +18,11 @@ import scipy.linalg
 
 import juggle_tracker.kalman_filter as kf
 
+
 def normal_log_pdf(x, mean, variance):
     return -0.5 * np.log(2 * math.pi * variance) + \
-            -0.5 * ((x - mean) ** 2) / variance 
+            -0.5 * ((x - mean) ** 2) / variance
+
 
 def test_kalman_transition():
     hp = kf.Hyperparameters(
@@ -57,6 +59,7 @@ def test_kalman_transition():
     ])
     np.testing.assert_allclose(new_states.covariances, expected_covariances)
 
+
 def test_kalman_posterior_at_mean():
     """One ball, one observation exactly at the mean of the state."""
     hp = kf.Hyperparameters(
@@ -92,6 +95,7 @@ def test_kalman_posterior_at_mean():
     expected_observation_logp = normal_log_pdf(0., mean=0., variance=5.) + \
         normal_log_pdf(0., mean=0., variance=5.)
     np.testing.assert_allclose(observation_logp, expected_observation_logp)
+
 
 def test_kalman_posterior_away_mean():
     """One ball, one observation away from the mean of the state."""
@@ -130,6 +134,7 @@ def test_kalman_posterior_away_mean():
     expected_observation_logp = normal_log_pdf(10., mean=0., variance=5.) + \
         normal_log_pdf(20., mean=0., variance=5.)
     np.testing.assert_allclose(observation_logp, expected_observation_logp)
+
 
 def test_kalman_posterior_mask():
     """Two balls, but one of them is not observed."""
